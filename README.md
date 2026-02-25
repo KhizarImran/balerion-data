@@ -85,27 +85,118 @@ Data is persisted as **Parquet files** partitioned by asset and time period. Thi
 | `value` | `float64` | Indicator value |
 | `revised` | `bool` | Whether this is a revised print |
 
-## Getting Started
+## Quick Start - MT5 Data Collection
+
+The MT5 data collection system is ready to use. It collects 1-minute OHLCV data for FX pairs and indices.
+
+### Prerequisites
+
+1. MetaTrader 5 installed and logged in
+2. Python 3.11+ 
+3. uv package manager (or pip)
+
+### Installation
+
+**Option 1: Using uv (Recommended)**
 
 ```bash
-# Clone the repo
-git clone <repo-url> balerion-data
-cd balerion-data
+# Windows
+.\scripts\setup.ps1
 
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate
+# Linux/Mac
+chmod +x scripts/setup.sh
+./scripts/setup.sh
+```
+
+The setup script will:
+- Install uv if not present
+- Create a virtual environment
+- Install all dependencies
+
+**Option 2: Manual installation with uv**
+
+```bash
+# Install uv (if not installed)
+# Windows: irm https://astral.sh/uv/install.ps1 | iex
+# Linux/Mac: curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Install dependencies
-pip install -r requirements.txt
-
-# Copy and configure environment
-cp config/example.env .env
-# Edit .env with your API keys and data paths
-
-# Run initial backfill
-python -m pipeline.backfill --source fx --pair EURUSD --start 2020-01-01
+uv sync
 ```
+
+**Option 3: Using pip**
+
+```bash
+pip install -r scripts/requirements.txt
+```
+
+### Initial Data Collection
+
+Collect maximum available historical data (run once):
+
+```bash
+# Using uv (recommended)
+uv run python scripts/collect_historical_data.py
+
+# Or using standard Python
+python scripts/collect_historical_data.py
+```
+
+This will fetch 2-3 years of 1-minute data for:
+- **FX**: EURUSD, USDJPY, GBPUSD, EURGBP, USDCAD, AUDNZD
+- **Indices**: US30, XAUUSD
+
+Data is saved to `data/fx/` and `data/indices/` as Parquet files.
+
+### Weekly Updates
+
+Keep your data current (run weekly):
+
+```bash
+# Using uv (recommended)
+uv run python scripts/update_weekly_data.py
+
+# Or using standard Python
+python scripts/update_weekly_data.py
+```
+
+This automatically:
+- Fetches the last 7 days of data
+- Merges with existing data
+- Removes duplicates
+- Updates the parquet files
+
+### Check Data Quality
+
+```bash
+# Using uv (recommended)
+uv run python scripts/check_data.py
+
+# Or using standard Python
+python scripts/check_data.py
+```
+
+### Quick Reference
+
+```bash
+# Install dependencies
+uv sync
+
+# Run initial collection (once)
+uv run python scripts/collect_historical_data.py
+
+# Update weekly
+uv run python scripts/update_weekly_data.py
+
+# Check data quality
+uv run python scripts/check_data.py
+```
+
+## Documentation
+
+- **[Quick Start Guide](docs/QUICKSTART.md)** - Fast setup and common tasks
+- **[Scripts Documentation](docs/SCRIPTS.md)** - Detailed script usage and configuration
+- **[Changelog](docs/CHANGELOG.md)** - Version history and updates
 
 ## Configuration
 
