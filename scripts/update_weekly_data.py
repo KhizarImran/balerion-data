@@ -52,11 +52,11 @@ def collect_recent_data(symbol: str, timeframe, days: int = 7) -> pd.DataFrame:
     # Find the actual symbol name
     actual_symbol = mt5_utils.find_symbol(symbol)
     if actual_symbol is None:
-        print(f"  ❌ Symbol {symbol} not found in MT5")
+        print(f"  [ERROR] Symbol {symbol} not found in MT5")
         return None
     
     if actual_symbol != symbol:
-        print(f"  ℹ Using symbol: {actual_symbol} (mapped from {symbol})")
+        print(f"  [INFO] Using symbol: {actual_symbol} (mapped from {symbol})")
     
     # Calculate date range
     from_date = datetime.now() - timedelta(days=days)
@@ -72,10 +72,10 @@ def collect_recent_data(symbol: str, timeframe, days: int = 7) -> pd.DataFrame:
     rates = mt5.copy_rates_from_pos(actual_symbol, timeframe, 0, bars_to_fetch)
     
     if rates is None or len(rates) == 0:
-        print(f"  ❌ Failed to get rates, error: {mt5.last_error()}")
+        print(f"  [ERROR] Failed to get rates, error: {mt5.last_error()}")
         return None
     
-    print(f"  ✓ Retrieved {len(rates):,} bars")
+    print(f"  [OK] Retrieved {len(rates):,} bars")
     
     # Convert to DataFrame
     df = pd.DataFrame(rates)
@@ -84,7 +84,7 @@ def collect_recent_data(symbol: str, timeframe, days: int = 7) -> pd.DataFrame:
     # Filter to requested date range
     df = df[df['time'] >= from_date]
     
-    print(f"  ✓ Filtered to {len(df):,} bars in date range")
+    print(f"  [OK] Filtered to {len(df):,} bars in date range")
     print(f"    Actual range: {df['time'].min()} to {df['time'].max()}")
     
     # Rename columns
@@ -125,8 +125,8 @@ def update_symbol(symbol: str, category: str, timeframe, days: int, force: bool 
     existing_df = mt5_utils.load_existing_data(filepath)
     
     if existing_df is None:
-        print(f"  ⚠ No existing data found for {symbol}")
-        print(f"  ℹ Run 'collect_historical_data.py' first to create initial dataset")
+        print(f"  [WARN] No existing data found for {symbol}")
+        print(f"  [INFO] Run 'collect_historical_data.py' first to create initial dataset")
         return False
     
     # Check if update is needed
@@ -135,15 +135,15 @@ def update_symbol(symbol: str, category: str, timeframe, days: int, force: bool 
         hours_since_update = (datetime.now() - latest_timestamp).total_seconds() / 3600
         
         if hours_since_update < 12:  # Less than 12 hours old
-            print(f"  ℹ Data is recent (last update: {latest_timestamp})")
-            print(f"  ℹ Skipping update (use --force to override)")
+            print(f"  [INFO] Data is recent (last update: {latest_timestamp})")
+            print(f"  [INFO] Skipping update (use --force to override)")
             return True
     
     # Collect new data
     new_df = collect_recent_data(symbol, timeframe, days)
     
     if new_df is None or new_df.empty:
-        print(f"  ❌ Failed to collect new data")
+        print(f"  [ERROR] Failed to collect new data")
         return False
     
     # Merge with existing data
@@ -153,17 +153,17 @@ def update_symbol(symbol: str, category: str, timeframe, days: int, force: bool 
     # Check if there's actually new data
     new_rows = len(merged_df) - len(existing_df)
     if new_rows <= 0:
-        print(f"  ℹ No new data to add")
+        print(f"  [INFO] No new data to add")
         return True
     
-    print(f"  ✓ Added {new_rows:,} new rows")
+    print(f"  [OK] Added {new_rows:,} new rows")
     print(f"    New date range: {merged_df['timestamp'].min()} to {merged_df['timestamp'].max()}")
     
     # Backup old file
     if filepath.exists():
         backup_path = filepath.with_suffix('.parquet.backup')
         filepath.rename(backup_path)
-        print(f"  ✓ Created backup: {backup_path.name}")
+        print(f"  [OK] Created backup: {backup_path.name}")
     
     # Save updated data
     mt5_utils.save_dataframe(merged_df, filepath, config.SAVE_FORMAT)
@@ -217,7 +217,7 @@ def update_all_symbols(days: int = 7, force: bool = False):
                 else:
                     fx_failed.append(symbol)
             except Exception as e:
-                print(f"  ❌ Error updating {symbol}: {e}")
+                print(f"  [ERROR] Error updating {symbol}: {e}")
                 fx_failed.append(symbol)
         
         # Update Index symbols
@@ -235,7 +235,7 @@ def update_all_symbols(days: int = 7, force: bool = False):
                 else:
                     idx_failed.append(symbol)
             except Exception as e:
-                print(f"  ❌ Error updating {symbol}: {e}")
+                print(f"  [ERROR] Error updating {symbol}: {e}")
                 idx_failed.append(symbol)
         
         # Print summary
@@ -244,19 +244,19 @@ def update_all_symbols(days: int = 7, force: bool = False):
         print("="*80)
         
         print(f"\nFX Symbols:")
-        print(f"  ✓ Success: {len(fx_success)}/{len(config.FX_SYMBOLS)}")
+        print(f"  [OK] Success: {len(fx_success)}/{len(config.FX_SYMBOLS)}")
         if fx_success:
             print(f"    {', '.join(fx_success)}")
         if fx_failed:
-            print(f"  ❌ Failed: {len(fx_failed)}/{len(config.FX_SYMBOLS)}")
+            print(f"  [ERROR] Failed: {len(fx_failed)}/{len(config.FX_SYMBOLS)}")
             print(f"    {', '.join(fx_failed)}")
         
         print(f"\nIndex Symbols:")
-        print(f"  ✓ Success: {len(idx_success)}/{len(config.INDEX_SYMBOLS)}")
+        print(f"  [OK] Success: {len(idx_success)}/{len(config.INDEX_SYMBOLS)}")
         if idx_success:
             print(f"    {', '.join(idx_success)}")
         if idx_failed:
-            print(f"  ❌ Failed: {len(idx_failed)}/{len(config.INDEX_SYMBOLS)}")
+            print(f"  [ERROR] Failed: {len(idx_failed)}/{len(config.INDEX_SYMBOLS)}")
             print(f"    {', '.join(idx_failed)}")
         
         total_success = len(fx_success) + len(idx_success)
@@ -266,7 +266,7 @@ def update_all_symbols(days: int = 7, force: bool = False):
         print(f"\nCompleted at: {datetime.now()}")
         
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+        print(f"\n[ERROR] Unexpected error: {e}")
         import traceback
         traceback.print_exc()
         
@@ -297,7 +297,7 @@ def main():
     try:
         update_all_symbols(days=args.days, force=args.force)
     except KeyboardInterrupt:
-        print("\n\n⚠ Update interrupted by user")
+        print("\n\n[WARN] Update interrupted by user")
         mt5_utils.shutdown_mt5()
         sys.exit(1)
 
