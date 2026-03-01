@@ -62,4 +62,4 @@ htmlcov/
 *.temp
 
 # MCP file
-.opencode.json
+opencode.json
