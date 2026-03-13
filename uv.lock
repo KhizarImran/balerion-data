@@ -24,6 +24,7 @@ name = "balerion-data"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "dukascopy-python" },
     { name = "metatrader5" },
     { name = "pandas" },
     { name = "pyarrow" },
@@ -42,6 +43,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0.0" },
+    { name = "dukascopy-python", specifier = ">=0.1.0" },
     { name = "ipython", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "metatrader5", specifier = ">=5.0.45" },
     { name = "pandas", specifier = ">=2.0.0" },
@@ -200,6 +202,19 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/43/fa/6d96a0978d19e17b68d634497769987b16c8f4cd0a7a05048bec693caa6b/decorator-5.2.1.tar.gz", hash = "sha256:65f266143752f734b0a7cc83c46f4618af75b8c5911b00ccb61d0ac9b6da0360", size = 56711, upload-time = "2025-02-24T04:41:34.073Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4e/8c/f3147f5c4b73e7550fe5f9352eaa956ae838d5c51eb58e7a25b9f3e2643b/decorator-5.2.1-py3-none-any.whl", hash = "sha256:d316bb415a2d9e2d2b3abcc4084c6502fc09240e292cd76a76afc106a1c8e04a", size = 9190, upload-time = "2025-02-24T04:41:32.565Z" },
+]
+
+[[package]]
+name = "dukascopy-python"
+version = "4.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pandas" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/34/7f/c054097e4020696ac3c4a9e85ab9a75342e01e593dbe60adc14148924ea1/dukascopy_python-4.0.1.tar.gz", hash = "sha256:5bdcf2c8a72d69ec035a56e59b5534a96ccbbbecdbe4f22d74608d88eaf39b64", size = 19326, upload-time = "2025-04-28T19:11:58.519Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e4/0c/bddb653f83f7e721044910e329f4e2b87569e676b58520e91296dc7f7237/dukascopy_python-4.0.1-py3-none-any.whl", hash = "sha256:bb7ccb9b38e43276f08256c41f66ca38fd972d0d5db0081660ee652d14ddf431", size = 17023, upload-time = "2025-04-28T19:11:54.489Z" },
 ]
 
 [[package]]
