@@ -88,7 +88,8 @@ DATA_DIR = BASE_DIR / "data"
 
 def output_path(ticker: str) -> Path:
     _, subfolder = SYMBOLS[ticker]
-    return DATA_DIR / subfolder / f"{ticker.lower()}_dukascopy_1h.parquet"
+    sym = ticker.lower()
+    return DATA_DIR / subfolder / sym / f"{sym}_dukascopy_1h.parquet"
 
 
 # ---------------------------------------------------------------------------

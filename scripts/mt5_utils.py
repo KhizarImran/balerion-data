@@ -322,4 +322,5 @@ def get_data_filepath(symbol: str, category: str = None) -> Path:
     else:
         base_dir = config.INDICES_DIR
 
-    return base_dir / f"{symbol.lower()}_1m.parquet"
+    sym = symbol.lower()
+    return base_dir / sym / f"{sym}_1m.parquet"

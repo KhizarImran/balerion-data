@@ -40,7 +40,7 @@ FX_DIR = DATA_DIR / "fx"
 SYMBOL = "USDJPY"
 SYMBOL_ALTERNATIVES = ["USDJPY", "USDJPY.a", "USDJPYm", "USDJPY."]
 TIMEFRAME_STR = "H1"
-OUTPUT_PATH = FX_DIR / "usdjpy_1h.parquet"
+OUTPUT_PATH = FX_DIR / "usdjpy" / "usdjpy_1h.parquet"
 
 # Minimum history to collect on first run (in days)
 MIN_HISTORY_DAYS = 185  # ~6 months + buffer
@@ -166,7 +166,9 @@ def collect_full_history(actual_symbol: str) -> pd.DataFrame:
         earliest_dt = datetime.fromtimestamp(earliest_ts, tz=pytz.utc)
 
         span_days = (latest_dt - earliest_dt).days
-        print(f"    Attempt {attempt}: {len(all_rates):,} bars total  |  earliest: {earliest_dt:%Y-%m-%d}  |  span: {span_days}d")
+        print(
+            f"    Attempt {attempt}: {len(all_rates):,} bars total  |  earliest: {earliest_dt:%Y-%m-%d}  |  span: {span_days}d"
+        )
 
         if earliest_dt <= target_start:
             print(f"  [OK] Reached 6-month target ({span_days} days of history)")
@@ -184,7 +186,9 @@ def collect_full_history(actual_symbol: str) -> pd.DataFrame:
     span = df["timestamp"].max() - df["timestamp"].min()
     print(f"\n  Collection complete:")
     print(f"    Rows     : {len(df):,}")
-    print(f"    Range    : {df['timestamp'].min():%Y-%m-%d %H:%M} UTC -> {df['timestamp'].max():%Y-%m-%d %H:%M} UTC")
+    print(
+        f"    Range    : {df['timestamp'].min():%Y-%m-%d %H:%M} UTC -> {df['timestamp'].max():%Y-%m-%d %H:%M} UTC"
+    )
     print(f"    Span     : {span.days} days ({span.days / 30.44:.1f} months)")
 
     if span.days < MIN_HISTORY_DAYS:
@@ -261,7 +265,9 @@ def update(days: int = 7, force: bool = False):
         net_new = len(combined) - len(existing)
         removed = before - len(combined)
 
-        print(f"  Merged  : {len(existing):,} + {len(new_df):,} -> {len(combined):,} rows  ({net_new:+,} net new, {removed} dupes removed)")
+        print(
+            f"  Merged  : {len(existing):,} + {len(new_df):,} -> {len(combined):,} rows  ({net_new:+,} net new, {removed} dupes removed)"
+        )
 
         if net_new <= 0:
             print("  [INFO] No new bars - file unchanged")
@@ -307,7 +313,9 @@ def collect(force: bool = False):
     print(f"\n{'=' * 70}")
     print(f"USDJPY H1 - Full Collection")
     print(f"Started : {datetime.now():%Y-%m-%d %H:%M:%S}")
-    print(f"Target  : >= {MIN_HISTORY_DAYS} days ({MIN_HISTORY_DAYS / 30.44:.1f} months) of H1 bars")
+    print(
+        f"Target  : >= {MIN_HISTORY_DAYS} days ({MIN_HISTORY_DAYS / 30.44:.1f} months) of H1 bars"
+    )
     print(f"Output  : {OUTPUT_PATH}")
     print(f"{'=' * 70}")
 

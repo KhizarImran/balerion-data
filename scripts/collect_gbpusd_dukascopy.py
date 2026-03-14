@@ -40,7 +40,9 @@ from dukascopy_python.instruments import INSTRUMENT_FX_MAJORS_GBP_USD
 # target so we always attempt to grab everything available.
 START_DATE = datetime(2003, 1, 1, tzinfo=timezone.utc)
 
-OUTPUT_PATH = Path(__file__).parent.parent / "data" / "fx" / "gbpusd_dukascopy_1h.parquet"
+OUTPUT_PATH = (
+    Path(__file__).parent.parent / "data" / "fx" / "gbpusd" / "gbpusd_dukascopy_1h.parquet"
+)
 
 INSTRUMENT = INSTRUMENT_FX_MAJORS_GBP_USD  # "GBP/USD"
 INTERVAL = dukascopy_python.INTERVAL_HOUR_1

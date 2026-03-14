@@ -92,7 +92,8 @@ SYMBOL_IDS = [s for s, _ in ALL_SYMBOLS]
 
 def _default_filepath(symbol: str, category: str) -> Path:
     base = config.FX_DIR if category == "fx" else config.INDICES_DIR
-    return base / f"{symbol.lower()}_1m.parquet"
+    sym = symbol.lower()
+    return base / sym / f"{sym}_1m.parquet"
 
 
 def _load_path(path: Path) -> pd.DataFrame:
