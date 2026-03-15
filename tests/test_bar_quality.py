@@ -395,16 +395,35 @@ class TestOHLCSanity:
 
     def test_price_spike_detection(self, bar_data):
         """
-        Flag bars where high-low range exceeds 20x the rolling median range.
-        Window scales with timeframe so we always look back ~200 bars.
+        Flag bars where high-low range exceeds the rolling-median spike threshold.
+
+        Threshold scales with timeframe:
+          - M1 (1 min): 100x  — a single minute can absorb an entire news shock
+            (e.g. NFP, flash crashes); genuine corruption is orders of magnitude
+            larger than the worst legitimate spike seen (~75x).
+          - H1+ (60 min+): 20x — aggregation smooths out intra-bar spikes so a
+            20x outlier is almost certainly bad data.
+          - Everything in between scales linearly between the two endpoints.
+
+        Window is fixed at 200 bars so we always look back ~200 bars regardless
+        of timeframe.
         """
         _, df, tf = bar_data
+        # Threshold: 100x at M1, 20x at H1+, linear interpolation in between
+        if tf <= 1:
+            multiplier = 100
+        elif tf >= 60:
+            multiplier = 20
+        else:
+            # linear: 100 at tf=1, 20 at tf=60
+            multiplier = 100 - (tf - 1) * (80 / 59)
+
         bar_range = df["high"] - df["low"]
         rolling_median = bar_range.rolling(window=200, min_periods=50).median()
         mask = rolling_median.notna() & (rolling_median > 0)
-        spikes = (bar_range[mask] > rolling_median[mask] * 20).sum()
+        spikes = (bar_range[mask] > rolling_median[mask] * multiplier).sum()
         assert spikes == 0, (
-            f"[{_tf_label(tf)}] {spikes:,} bars with range > 20x rolling median "
+            f"[{_tf_label(tf)}] {spikes:,} bars with range > {multiplier:.0f}x rolling median "
             f"— possible data corruption"
         )
 
@@ -423,9 +442,93 @@ BANK_HOLIDAY_DATES = {
     (1, 2),  # New Year's Day (observed)
 }
 
+# Fixed-date US market holidays (month, day)
+_US_FIXED_HOLIDAYS = {
+    (1, 1),
+    (1, 2),  # New Year / observed
+    (6, 19),  # Juneteenth
+    (7, 3),
+    (7, 4),
+    (7, 5),  # Independence Day + observed Fri/Mon
+    (12, 24),
+    (12, 25),
+    (12, 26),
+    (12, 31),
+}
+
+
+def _build_us_holiday_set(years) -> set:
+    """
+    Build a set of pd.Timestamps for US market holidays (floating + fixed)
+    for the given iterable of years. Cached per unique year-range.
+    """
+    holidays: set = set()
+    for y in years:
+        # Add fixed-date holidays for this year
+        for m, d in _US_FIXED_HOLIDAYS:
+            try:
+                holidays.add(pd.Timestamp(year=y, month=m, day=d))
+            except Exception:
+                pass
+
+        # Floating holidays
+        def nth_weekday(month, weekday, n):
+            first = pd.Timestamp(year=y, month=month, day=1)
+            offset = (weekday - first.weekday()) % 7
+            return first + pd.Timedelta(days=offset) + pd.Timedelta(weeks=n - 1)
+
+        try:
+            holidays.add(nth_weekday(1, 0, 3))  # MLK Day: 3rd Mon Jan
+            holidays.add(nth_weekday(2, 0, 3))  # Presidents Day: 3rd Mon Feb
+            holidays.add(nth_weekday(9, 0, 1))  # Labor Day: 1st Mon Sep
+            thanksgiving = nth_weekday(11, 3, 4)  # Thanksgiving: 4th Thu Nov
+            holidays.add(thanksgiving)
+            holidays.add(thanksgiving + pd.Timedelta(days=1))  # Black Friday
+
+            # Memorial Day: last Monday in May
+            fifth_mon = nth_weekday(5, 0, 5)
+            memorial = fifth_mon if fifth_mon.month == 5 else nth_weekday(5, 0, 4)
+            holidays.add(memorial)
+        except Exception:
+            pass
+
+    return holidays
+
+
+def _is_holiday_series(ts_series: pd.Series) -> pd.Series:
+    """
+    Vectorised holiday check. Returns a boolean Series aligned with ts_series.
+    Much faster than per-row .apply() for large DataFrames.
+    """
+    # Fixed-date check (month, day)
+    md = list(zip(ts_series.dt.month, ts_series.dt.day))
+    fixed_mask = pd.Series(
+        [(m, d) in BANK_HOLIDAY_DATES or (m, d) in _US_FIXED_HOLIDAYS for m, d in md],
+        index=ts_series.index,
+    )
+
+    # Floating holidays — build set for all years present
+    years = ts_series.dt.year.unique()
+    holiday_set = _build_us_holiday_set(years)
+
+    # Normalise to date-only Timestamps for comparison.
+    # Strip timezone before isin() so tz-aware and tz-naive compare correctly.
+    dates = ts_series.dt.normalize()
+    if hasattr(dates.dtype, "tz") and dates.dtype.tz is not None:
+        dates = dates.dt.tz_localize(None)
+    floating_mask = dates.isin(holiday_set)
+
+    return fixed_mask | floating_mask
+
 
 def _is_bank_holiday(ts: pd.Timestamp) -> bool:
-    return (ts.month, ts.day) in BANK_HOLIDAY_DATES
+    """Scalar holiday check (kept for compatibility)."""
+    if (ts.month, ts.day) in BANK_HOLIDAY_DATES:
+        return True
+    if (ts.month, ts.day) in _US_FIXED_HOLIDAYS:
+        return True
+    hset = _build_us_holiday_set([ts.year])
+    return pd.Timestamp(year=ts.year, month=ts.month, day=ts.day) in hset
 
 
 class TestGaps:
@@ -441,7 +544,11 @@ class TestGaps:
 
         # Exclude gaps that cross a weekend (Fri/Sat/Sun start)
         is_weekend_cross = prev_ts.dt.weekday >= 4  # Fri=4, Sat=5, Sun=6
-        is_holiday = prev_ts.apply(_is_bank_holiday)
+
+        # Exclude gaps where the bar before the gap falls on a holiday,
+        # OR where the *next* day is a holiday (early-close eve gap).
+        next_day = prev_ts + pd.Timedelta(days=1)
+        is_holiday = _is_holiday_series(prev_ts).values | _is_holiday_series(next_day).values
 
         mid_week_diffs = diffs_reset[~is_weekend_cross & ~is_holiday]
         excessive = mid_week_diffs[mid_week_diffs > pd.Timedelta(hours=max_gap_h)]
