@@ -73,22 +73,28 @@
 ```
 balerion-data/
 ├── data/                          # Data storage (gitignored)
-│   ├── fx/                        # FX pair parquet files
-│   │   ├── eurusd_1m.parquet
-│   │   ├── usdjpy_1m.parquet
-│   │   ├── gbpusd_1m.parquet
-│   │   ├── eurgbp_1m.parquet
-│   │   ├── usdcad_1m.parquet
-│   │   └── audnzd_1m.parquet
+│   ├── fx/                        # FX pair parquet files — one subfolder per symbol
+│   │   ├── eurusd/
+│   │   │   ├── eurusd_dukascopy_1h.parquet
+│   │   │   └── eurusd_1m.parquet  (MT5)
+│   │   ├── usdjpy/
+│   │   │   ├── usdjpy_dukascopy_1h.parquet
+│   │   │   ├── usdjpy_dukascopy_15min.parquet  (if downloaded)
+│   │   │   └── usdjpy_1m.parquet  (MT5)
+│   │   ├── gbpusd/ eurgbp/ usdcad/ audnzd/  (same structure)
 │   └── indices/                   # Index parquet files
-│       ├── us30_1m.parquet
-│       └── xauusd_1m.parquet
+│       ├── us30/
+│       │   └── us30_dukascopy_1h.parquet
+│       └── xauusd/
+│           └── xauusd_dukascopy_1h.parquet
 │
 ├── scripts/                       # Python scripts
+│   ├── collect_dukascopy.py       # ⭐ Multi-TF Dukascopy downloader (preferred)
+│   ├── collect_dukascopy_h1.py    # Legacy 1H-only Dukascopy downloader
 │   ├── config.py                  # Configuration (symbols, settings)
 │   ├── mt5_utils.py               # Reusable MT5 utility functions
-│   ├── collect_historical_data.py # Initial collection (run once)
-│   ├── update_weekly_data.py      # Weekly updates (run weekly)
+│   ├── collect_historical_data.py # MT5 initial collection (run once)
+│   ├── update_weekly_data.py      # MT5 weekly updates
 │   ├── check_data.py              # Data quality checker
 │   ├── requirements.txt           # Pip dependencies
 │   ├── setup.ps1                  # Windows setup script
@@ -110,6 +116,41 @@ balerion-data/
 ```
 
 ## Key Scripts
+
+### 0. collect_dukascopy.py ⭐ (preferred data source)
+**Purpose:** Download Dukascopy Bank OHLCV data at any supported timeframe.
+
+Dukascopy data is higher quality than MT5 for backtesting — clean bid bars, no broker-specific gaps, goes back ~10 years.
+
+**Supported timeframes:** `1min` `5min` `10min` `15min` `30min` `1h` `4h` `1d` `1w` `1mo`
+
+**Output:** `data/fx/<sym>/<sym>_dukascopy_<tf>.parquet` (or `data/indices/` for US30/XAUUSD)
+
+```bash
+# Download USDJPY 15min (full ~10 years)
+uv run python scripts/collect_dukascopy.py --symbols USDJPY --tf 15min
+
+# Download all symbols at 1h
+uv run python scripts/collect_dukascopy.py --tf 1h
+
+# Force re-download
+uv run python scripts/collect_dukascopy.py --symbols EURUSD --tf 30min --force
+
+# Incremental update (top up last 7 days)
+uv run python scripts/collect_dukascopy.py --symbols USDJPY --tf 15min --update --days 7
+```
+
+**Notes:**
+- 15min download = ~350k bars over 10 years, takes a few minutes (~112 chunks)
+- Offer side = bid (standard for FX backtesting)
+- Timestamps stored as UTC in parquet
+
+---
+
+### collect_dukascopy_h1.py (legacy — use collect_dukascopy.py instead)
+Downloads only 1H bars for all symbols. Superseded by `collect_dukascopy.py` which supports all timeframes. Still works fine for 1H-only runs.
+
+---
 
 ### 1. collect_historical_data.py
 **Purpose:** Initial data collection (run once)
