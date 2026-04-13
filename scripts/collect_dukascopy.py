@@ -70,6 +70,7 @@ SYMBOLS: dict[str, tuple[str, str]] = {
     "AUDCHF": (I.INSTRUMENT_FX_CROSSES_AUD_CHF, "fx"),
     "NZDCAD": (I.INSTRUMENT_FX_CROSSES_NZD_CAD, "fx"),
     "NZDCHF": (I.INSTRUMENT_FX_CROSSES_NZD_CHF, "fx"),
+    "CADCHF": (I.INSTRUMENT_FX_CROSSES_CAD_CHF, "fx"),
     # --- Indices / metals ---
     "US30": (I.INSTRUMENT_IDX_AMERICA_E_D_J_IND, "indices"),
     "SPX500": (I.INSTRUMENT_IDX_AMERICA_E_SANDP_500, "indices"),
