@@ -1,0 +1,13 @@
+services:
+  balerion-terminal:
+    build: .
+    container_name: balerion-terminal
+    ports:
+      - "8501:8501"
+    volumes:
+      # Mount the data directory so the container reads live parquet files
+      - ../data:/app/data:ro
+    restart: always
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATA_DIR=/app/data
