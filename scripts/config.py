@@ -71,8 +71,8 @@ SYMBOL_ALTERNATIVES = {
     # Indices
     "US30":   ["US30", "US30.cash", "US30Cash", "USA30", "DJ30", "US30.", "USTEC30"],
     "XAUUSD": ["XAUUSD", "XAUUSD.a", "XAUUSDm", "GOLD", "XAUUSD.", "XAU/USD"],
-    "NAS100": ["NAS100", "NAS100.cash", "NASDAQ", "US100", "NAS100.", "USATEC", "NDX100"],
-    "SPX500": ["SPX500", "SPX500.cash", "SP500", "US500", "SPX500.", "S&P500"],
+    "NAS100": ["USTEC", "US100.cash", "NAS100", "NAS100.cash", "NASDAQ", "US100", "NAS100.", "NDX100"],
+    "SPX500": ["US500.cash", "SPX500", "SPX500.cash", "SP500", "US500", "SPX500.", "S&P500"],
     "UK100":  ["UK100", "UK100.cash", "FTSE100", "FTSE", "UK100.", "UKX"],
     "GER40":  ["GER40", "GER40.cash", "DAX40", "DAX", "GER40.", "DE40", "GER30"],
 }

@@ -180,17 +180,17 @@ def fetch_missing_m1(symbol: str, latest_timestamp: pd.Timestamp) -> pd.DataFram
     return df
 
 
-def update_symbol(symbol: str, dry_run: bool = False) -> bool:
+def update_symbol(symbol: str, dry_run: bool = False, category: str = "fx") -> bool:
     print("\n" + "=" * 80)
     print(f"Updating {symbol} M1")
     print("=" * 80)
 
-    path = find_existing_path(symbol, "fx")
+    path = find_existing_path(symbol, category)
     if path is None:
         print("  [WARN] No existing M1 parquet found. Checked:")
-        for candidate in candidate_paths(symbol, "fx"):
+        for candidate in candidate_paths(symbol, category):
             print(f"         {candidate}")
-        path = candidate_paths(symbol, "fx")[0]
+        path = candidate_paths(symbol, category)[0]
         print(f"  [INFO] Bootstrapping maximum MT5 M1 history to: {path}")
         if dry_run:
             print("  [DRY RUN] Would collect maximum MT5 M1 history")
@@ -256,17 +256,34 @@ def update_symbol(symbol: str, dry_run: bool = False) -> bool:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Incrementally append missing MT5 M1 bars to existing FX parquet files."
+        description="Incrementally append missing MT5 M1 bars to existing FX/indices parquet files."
     )
-    parser.add_argument("--symbols", nargs="+", default=config.FX_SYMBOLS)
+    parser.add_argument("--symbols", nargs="+", default=None)
+    parser.add_argument("--indices", action="store_true", help="Update index symbols instead of FX")
+    parser.add_argument("--all", action="store_true", help="Update both FX and index symbols")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
+    if args.symbols:
+        index_set = set(config.INDEX_SYMBOLS)
+        symbol_categories = [
+            (s, "indices" if s in index_set else "fx") for s in args.symbols
+        ]
+    elif args.all:
+        symbol_categories = [(s, "fx") for s in config.FX_SYMBOLS] + \
+                            [(s, "indices") for s in config.INDEX_SYMBOLS]
+    elif args.indices:
+        symbol_categories = [(s, "indices") for s in config.INDEX_SYMBOLS]
+    else:
+        symbol_categories = [(s, "fx") for s in config.FX_SYMBOLS]
+
+    all_symbols = [s for s, _ in symbol_categories]
+
     print("=" * 80)
-    print("MT5 M1 INCREMENTAL FX UPDATE")
+    print("MT5 M1 INCREMENTAL UPDATE")
     print("=" * 80)
     print(f"Started: {datetime.now()}")
-    print(f"Symbols ({len(args.symbols)}): {', '.join(args.symbols)}")
+    print(f"Symbols ({len(all_symbols)}): {', '.join(all_symbols)}")
     print(f"Dry run: {args.dry_run}")
 
     if not mt5_utils.initialize_mt5():
@@ -274,9 +291,9 @@ def main() -> None:
 
     results: list[tuple[str, bool]] = []
     try:
-        for symbol in args.symbols:
+        for symbol, category in symbol_categories:
             try:
-                results.append((symbol, update_symbol(symbol, dry_run=args.dry_run)))
+                results.append((symbol, update_symbol(symbol, dry_run=args.dry_run, category=category)))
             except Exception as exc:
                 print(f"  [ERROR] {symbol} failed: {exc}")
                 results.append((symbol, False))
