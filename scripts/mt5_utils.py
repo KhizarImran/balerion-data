@@ -294,22 +294,19 @@ def get_symbol_category(symbol: str) -> str:
     Returns:
         "fx" or "indices"
     """
-    if symbol in config.FX_SYMBOLS:
-        return "fx"
-    elif symbol in config.INDEX_SYMBOLS:
+    if symbol in config.INDEX_SYMBOLS:
         return "indices"
-    else:
-        # Default to fx
-        return "fx"
+    return "fx"
 
 
-def get_data_filepath(symbol: str, category: str = None) -> Path:
+def get_data_filepath(symbol: str, category: str = None, tf_label: str = "1m") -> Path:
     """
-    Get the filepath for a symbol's data
+    Get the filepath for a symbol's data.
 
     Args:
         symbol: Symbol name
         category: "fx" or "indices" (auto-detected if None)
+        tf_label: timeframe label used in filename, e.g. "5min", "1h", "1d"
 
     Returns:
         Path to parquet file
@@ -317,10 +314,6 @@ def get_data_filepath(symbol: str, category: str = None) -> Path:
     if category is None:
         category = get_symbol_category(symbol)
 
-    if category == "fx":
-        base_dir = config.FX_DIR
-    else:
-        base_dir = config.INDICES_DIR
-
+    base_dir = config.FX_DIR if category == "fx" else config.INDICES_DIR
     sym = symbol.lower()
-    return base_dir / sym / f"{sym}_1m.parquet"
+    return base_dir / sym / f"{sym}_mt5_{tf_label}.parquet"

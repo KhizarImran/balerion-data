@@ -1393,10 +1393,10 @@ def main():
             unsafe_allow_html=True,
         )
 
-        # ── Build symbol → tf → source index ────────────────────────────────
+        # ── Build symbol → source → tf index ────────────────────────────────
         sym_index: dict = {}
         for _lbl, _m in catalog.items():
-            sym_index.setdefault(_m["symbol"], {}).setdefault(_m["tf"], {})[_m["source"]] = _m
+            sym_index.setdefault(_m["symbol"], {}).setdefault(_m["source"], {})[_m["tf"]] = _m
 
         # ── PAIR ─────────────────────────────────────────────────────────────
         st.markdown('<div class="sidebar-section">PAIR</div>', unsafe_allow_html=True)
@@ -1408,9 +1408,18 @@ def main():
             label_visibility="collapsed",
         )
 
+        # ── SOURCE ────────────────────────────────────────────────────────────
+        st.markdown('<div class="sidebar-section">SOURCE</div>', unsafe_allow_html=True)
+        available_srcs = sorted(sym_index[selected_sym].keys())
+        default_src = "DUKASCOPY" if "DUKASCOPY" in available_srcs else available_srcs[0]
+        selected_src = st.selectbox(
+            "Source", available_srcs, index=available_srcs.index(default_src),
+            label_visibility="collapsed",
+        )
+
         # ── TIMEFRAME ─────────────────────────────────────────────────────────
         st.markdown('<div class="sidebar-section">TIMEFRAME</div>', unsafe_allow_html=True)
-        available_tfs = [tf for tf in TF_ORDER if tf in sym_index[selected_sym]]
+        available_tfs = [tf for tf in TF_ORDER if tf in sym_index[selected_sym][selected_src]]
         tf_labels = {
             "1min": "1 MIN", "5min": "5 MIN", "15min": "15 MIN", "30min": "30 MIN",
             "1h": "1 HOUR", "4h": "4 HOUR", "1d": "DAILY",
@@ -1422,16 +1431,7 @@ def main():
             label_visibility="collapsed",
         )
 
-        # ── SOURCE ────────────────────────────────────────────────────────────
-        st.markdown('<div class="sidebar-section">SOURCE</div>', unsafe_allow_html=True)
-        available_srcs = sorted(sym_index[selected_sym][selected_tf].keys())
-        default_src = "DUKASCOPY" if "DUKASCOPY" in available_srcs else available_srcs[0]
-        selected_src = st.selectbox(
-            "Source", available_srcs, index=available_srcs.index(default_src),
-            label_visibility="collapsed",
-        )
-
-        meta = sym_index[selected_sym][selected_tf][selected_src]
+        meta = sym_index[selected_sym][selected_src][selected_tf]
 
         # ── DATE RANGE ────────────────────────────────────────────────────────
         st.markdown('<div class="sidebar-section">DATE RANGE</div>', unsafe_allow_html=True)
